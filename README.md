@@ -1,5 +1,3 @@
-# ical_to_gcal_sync
-
 This script can be used to periodically pull events from an iCal feed and insert them into a selected Google Calendar using the API for that service. 
 
 Why do this instead of importing the iCal URL straight into GCal? The rate at which GCal refreshes iCal feeds is glacially slow, typically somewhere between 1-2 days. This has been the case for the best part of a decade now and Google show absolutely no interest in providing a sensible way to even trigger a manual refresh (e.g. https://productforums.google.com/forum/#!msg/calendar/iXp8fZfgU2E/wK9Qf6nfI48J). This script is a simple way to work around that limitation - it's not much use to me if I add an event to my todo list and then check my calendar the next day and forget about it because it hasn't been synced from the associated iCal feed yet. 
