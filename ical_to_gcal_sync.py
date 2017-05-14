@@ -56,7 +56,7 @@ def get_credentials():
     if not credentials or credentials.invalid:
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
         flow.user_agent = APPLICATION_NAME
-        credentials = tools.run(flow, store, None)
+        credentials = tools.run_flow(flow, store, None)
     return credentials
 
 def get_gcal_events(service, from_time):
