@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import logging
 import time
+import string
+import re
 
 import googleapiclient
 from apiclient import discovery
@@ -23,7 +25,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s|[%(levelname)s] %(message)s'
 logger.addHandler(handler)
 
 def get_current_events():
-    """Retrives data from iCal iCal feed and returns an ics.Calendar object 
+    """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
     containing the parsed data.
 
     Returns the parsed Calendar object or None if an error occurs.
@@ -86,8 +88,19 @@ def get_gcal_datetime(arrow_datetime, gcal_timezone):
 def get_gcal_date(arrow_datetime):
     return {u'date': arrow_datetime.format('YYYY-MM-DD')}
 
-def convert_uid(uid):
-    return uid.lower().replace('-', '')
+def create_id(uid, begintime, endtime):
+    """ Converts ical UUID, begin and endtime to a valid Gcal ID
+
+    Characters allowed in the ID are those used in base32hex encoding, i.e. lowercase letters a-v and digits 0-9, see section 3.1.2 in RFC2938
+    Te length of the ID must be between 5 and 1024 characters
+    https://developers.google.com/resources/api-libraries/documentation/calendar/v3/python/latest/calendar_v3.events.html
+
+    Returns:
+        ID
+    """
+    allowed_chars = string.ascii_lowercase[:22] + string.digits
+    temp = re.sub('[^%s]' % allowed_chars, '', uid.lower())
+    return re.sub('[^%s]' % allowed_chars, '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
 
 if __name__ == '__main__':
     # setting up Google Calendar API for use
@@ -105,12 +118,12 @@ if __name__ == '__main__':
     logger.info('> Retrieving events from iCal feed')
     ical_cal = get_current_events()
 
-    # convert iCal event list into a dict indexed by iCal UID
+    # convert iCal event list into a dict indexed by (converted) iCal UID
     ical_events = {}
     for ev in ical_cal.events:
         # filter out events in the past, don't care about syncing them
         if arrow.get(ev.begin) > today:
-            ical_events[convert_uid(ev.uid)] = ev
+            ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
 
     # retrieve the Google Calendar object itself
     gcal_cal = service.calendars().get(calendarId=CALENDAR_ID).execute()
@@ -169,10 +182,10 @@ if __name__ == '__main__':
     # now add any iCal events not already in the Google Calendar 
     logger.info('> Processing iCal events...')
     for ical_event in ical_events.values():
-        if ical_event.uid not in gcal_event_ids:
+        if create_id(ical_event.uid, ical_event.begin, ical_event.end) not in gcal_event_ids:
             gcal_event = {}
             gcal_event['summary'] = ical_event.name
-            gcal_event['id'] = convert_uid(ical_event.uid)
+            gcal_event['id'] = create_id(ical_event.uid, ical_event.begin, ical_event.end)
             gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
 
             # check if no time specified in iCal, treat as all day event if so
