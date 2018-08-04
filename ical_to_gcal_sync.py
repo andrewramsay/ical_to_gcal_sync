@@ -157,10 +157,28 @@ if __name__ == '__main__':
             ical_event = ical_events[eid]
             gcal_begin = arrow.get(gcal_event['start'].get('dateTime', gcal_event['start'].get('date')))
             gcal_end = arrow.get(gcal_event['end'].get('dateTime', gcal_event['end'].get('date')))
+
+            # Location changes?
+            if 'location' in gcal_event:
+                gcal_location = True
+            else:
+                gcal_location = False
+
+            if ical_event.location:
+                ical_location = True
+            else:
+                ical_location = False
+
             # if the iCal event has a different start/end time from the gcal event, 
             # update the latter with the datetimes from the iCal event. Same if
             # event name has changed (could also check description?)
-            if gcal_begin != ical_event.begin or gcal_end != ical_event.end or gcal_event['summary'] != ical_event.name:
+            if gcal_begin != ical_event.begin \
+                or gcal_end != ical_event.end \
+                or gcal_event['summary'] != ical_event.name \
+                or gcal_location != ical_location \
+                or gcal_location and gcal_event['location'] != ical_event.location \
+                or gcal_event['description'] != ical_event.description:
+
                 logger.info('> Updating event "%s" due to date/time change...' % (name))
                 delta = arrow.get(ical_event.end) - arrow.get(ical_event.begin)
                 # all-day events handled slightly differently
@@ -175,6 +193,7 @@ if __name__ == '__main__':
 
                 gcal_event['summary'] = ical_event.name
                 gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
+                gcal_event['location'] = ical_event.location
 
                 service.events().update(calendarId=CALENDAR_ID, eventId=eid, body=gcal_event).execute()
                 time.sleep(API_SLEEP_TIME)
@@ -187,6 +206,7 @@ if __name__ == '__main__':
             gcal_event['summary'] = ical_event.name
             gcal_event['id'] = create_id(ical_event.uid, ical_event.begin, ical_event.end)
             gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
+            gcal_event['location'] = ical_event.location
 
             # check if no time specified in iCal, treat as all day event if so
             delta = arrow.get(ical_event.end) - arrow.get(ical_event.begin)
