@@ -68,9 +68,40 @@ def get_gcal_events(service, from_time):
 
     Returns a dict containing the event(s) existing in the calendar.
     """
-    eventsResult = service.events().list(calendarId=CALENDAR_ID, timeMin=from_time, maxResults=100, singleEvents=True, orderBy='startTime', showDeleted=True).execute()
+
+    # The list() method returns a dict containing various metadata along with the actual calendar entries (if any). 
+    # It is not guaranteed to return all available events in a single call, and so may need called multiple times
+    # until it indicates no more events are available, signalled by the absence of "nextPageToken" in the result dict
+
+    logger.debug('Retrieving Google Calendar events')
+
+    # make an initial call, if this returns all events we don't need to do anything else,,,
+    eventsResult = service.events().list(calendarId=CALENDAR_ID, 
+                                         timeMin=from_time, 
+                                         singleEvents=True, 
+                                         orderBy='startTime', 
+                                         showDeleted=True).execute()
+
     events = eventsResult.get('items', [])
-    logger.info('> Found %d upcoming events in Google Calendar' % len(events))
+    # if nextPageToken is NOT in the dict, this should be everything
+    if 'nextPageToken' not in eventsResult:
+        logger.info('> Found %d upcoming events in Google Calendar (single page)' % len(events))
+        return events
+
+    # otherwise keep calling the method, passing back the nextPageToken each time
+    while 'nextPageToken' in eventsResult:
+        token = eventsResult['nextPageToken']
+        eventsResult = service.events().list(calendarId=CALENDAR_ID, 
+                                             timeMin=from_time, 
+                                             pageToken=token, 
+                                             singleEvents=True, 
+                                             orderBy='startTime', 
+                                             showDeleted=True).execute()
+        newevents = eventsResult.get('items', [])
+        events.extend(newevents)
+        logger.debug('> Found %d events on new page, %d total' % (len(newevents), len(events)))
+    
+    logger.info('> Found %d upcoming events in Google Calendar (multi page)' % len(events))
     return events
 
 def delete_all_events(service):
