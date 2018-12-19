@@ -4,6 +4,7 @@ import logging
 import time
 import string
 import re
+import sys
 
 import googleapiclient
 from apiclient import discovery
@@ -148,6 +149,9 @@ if __name__ == '__main__':
     # retrieve events from the iCal feed
     logger.info('> Retrieving events from iCal feed')
     ical_cal = get_current_events()
+
+    if ical_cal is None:
+        sys.exit(-1)
 
     # convert iCal event list into a dict indexed by (converted) iCal UID
     ical_events = {}
