@@ -38,8 +38,8 @@ def get_current_events():
 
     try:
         cal = ics.Calendar(resp.text)
-    except:
-        logger.error('> Error parsing iCal data')
+    except Exception as e:
+        logger.error('> Error parsing iCal data ({})'.format(e))
         return None
 
     return cal
