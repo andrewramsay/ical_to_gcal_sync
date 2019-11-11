@@ -160,6 +160,8 @@ if __name__ == '__main__':
         if arrow.get(ev.begin) > today:
             ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
 
+    logger.debug('> Collected %d iCal events' % len(ical_events))
+
     # retrieve the Google Calendar object itself
     gcal_cal = service.calendars().get(calendarId=CALENDAR_ID).execute()
 
@@ -171,7 +173,6 @@ if __name__ == '__main__':
     # get deleted. Any events still present but with changed start/end times
     # get updated.
     for gcal_event in gcal_events:
-        name = gcal_event['summary']
         eid = gcal_event['id']
 
         if eid not in ical_events:
@@ -183,7 +184,7 @@ if __name__ == '__main__':
             # your calendar, selecting "View bin" and then clicking "Empty bin 
             # now" to completely delete these events.
             try:
-                logger.info('> Deleting event "%s" from Google Calendar...' % name)
+                logger.info('> Deleting event "%s" from Google Calendar...' % gcal_event.get('summary', '<unnamed event>'))
                 service.events().delete(calendarId=CALENDAR_ID, eventId=eid).execute()
                 time.sleep(API_SLEEP_TIME)
             except googleapiclient.errors.HttpError:
@@ -204,6 +205,10 @@ if __name__ == '__main__':
             else:
                 ical_location = False
 
+            # event name can be left unset, in which case there's no summary field
+            gcal_name = gcal_event.get('summary', None)
+            log_name = '<unnamed event>' if gcal_name is None else gcal_name
+
             # if the iCal event has a different start/end time from the gcal event, 
             # update the latter with the datetimes from the iCal event. Same if
             # event name has changed (could also check description?)
@@ -214,7 +219,7 @@ if __name__ == '__main__':
                 or gcal_location and gcal_event['location'] != ical_event.location \
                 or gcal_event['description'] != ical_event.description:
 
-                logger.info('> Updating event "%s" due to date/time change...' % (name))
+                logger.info('> Updating event "%s" due to date/time change...' % (log_name))
                 delta = arrow.get(ical_event.end) - arrow.get(ical_event.begin)
                 # all-day events handled slightly differently
                 # TODO multi-day events?
