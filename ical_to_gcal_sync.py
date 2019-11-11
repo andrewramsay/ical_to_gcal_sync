@@ -194,29 +194,20 @@ if __name__ == '__main__':
             gcal_begin = arrow.get(gcal_event['start'].get('dateTime', gcal_event['start'].get('date')))
             gcal_end = arrow.get(gcal_event['end'].get('dateTime', gcal_event['end'].get('date')))
 
-            # Location changes?
-            if 'location' in gcal_event:
-                gcal_location = True
-            else:
-                gcal_location = False
-
-            if ical_event.location:
-                ical_location = True
-            else:
-                ical_location = False
+            gcal_has_location = 'location' in gcal_event
+            ical_has_location = ical_event.location is not None
 
             # event name can be left unset, in which case there's no summary field
             gcal_name = gcal_event.get('summary', None)
             log_name = '<unnamed event>' if gcal_name is None else gcal_name
 
-            # if the iCal event has a different start/end time from the gcal event, 
-            # update the latter with the datetimes from the iCal event. Same if
-            # event name has changed (could also check description?)
+            # check if the iCal event has a different: start/end time, name, location,
+            # or description, and if so sync the changes to the GCal event
             if gcal_begin != ical_event.begin \
                 or gcal_end != ical_event.end \
-                or gcal_event['summary'] != ical_event.name \
-                or gcal_location != ical_location \
-                or gcal_location and gcal_event['location'] != ical_event.location \
+                or gcal_name != ical_event.name \
+                or gcal_has_location != ical_has_location \
+                or (gcal_has_location and gcal_event['location'] != ical_event.location) \
                 or gcal_event['description'] != ical_event.description:
 
                 logger.info('> Updating event "{}" due to date/time change...'.format(log_name))
@@ -232,7 +223,8 @@ if __name__ == '__main__':
                         gcal_event['end']   = get_gcal_datetime(ical_event.end, gcal_cal['timeZone'])
 
                 gcal_event['summary'] = ical_event.name
-                gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
+                gcal_event['description'] = ical_event.description
+                gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': ICAL_FEED}
                 gcal_event['location'] = ical_event.location
 
                 service.events().update(calendarId=CALENDAR_ID, eventId=eid, body=gcal_event).execute()
