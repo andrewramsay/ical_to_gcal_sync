@@ -86,7 +86,7 @@ def get_gcal_events(service, from_time):
     events = eventsResult.get('items', [])
     # if nextPageToken is NOT in the dict, this should be everything
     if 'nextPageToken' not in eventsResult:
-        logger.info('> Found %d upcoming events in Google Calendar (single page)' % len(events))
+        logger.info('> Found {:d} upcoming events in Google Calendar (single page)'.format(len(events)))
         return events
 
     # otherwise keep calling the method, passing back the nextPageToken each time
@@ -100,9 +100,9 @@ def get_gcal_events(service, from_time):
                                              showDeleted=True).execute()
         newevents = eventsResult.get('items', [])
         events.extend(newevents)
-        logger.debug('> Found %d events on new page, %d total' % (len(newevents), len(events)))
+        logger.debug('> Found {:d} events on new page, {:d} total'.format(len(newevents), len(events)))
     
-    logger.info('> Found %d upcoming events in Google Calendar (multi page)' % len(events))
+    logger.info('> Found {:d} upcoming events in Google Calendar (multi page)'.format(len(events)))
     return events
 
 def delete_all_events(service):
@@ -131,8 +131,8 @@ def create_id(uid, begintime, endtime):
         ID
     """
     allowed_chars = string.ascii_lowercase[:22] + string.digits
-    temp = re.sub('[^%s]' % allowed_chars, '', uid.lower())
-    return re.sub('[^%s]' % allowed_chars, '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
+    temp = re.sub('[^{}]'.format(allowed_chars), '', uid.lower())
+    return re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
 
 if __name__ == '__main__':
     # setting up Google Calendar API for use
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         if arrow.get(ev.begin) > today:
             ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
 
-    logger.debug('> Collected %d iCal events' % len(ical_events))
+    logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
     # retrieve the Google Calendar object itself
     gcal_cal = service.calendars().get(calendarId=CALENDAR_ID).execute()
@@ -184,7 +184,7 @@ if __name__ == '__main__':
             # your calendar, selecting "View bin" and then clicking "Empty bin 
             # now" to completely delete these events.
             try:
-                logger.info('> Deleting event "%s" from Google Calendar...' % gcal_event.get('summary', '<unnamed event>'))
+                logger.info('> Deleting event "{}" from Google Calendar...'.format(gcal_event.get('summary', '<unnamed event>')))
                 service.events().delete(calendarId=CALENDAR_ID, eventId=eid).execute()
                 time.sleep(API_SLEEP_TIME)
             except googleapiclient.errors.HttpError:
@@ -219,7 +219,7 @@ if __name__ == '__main__':
                 or gcal_location and gcal_event['location'] != ical_event.location \
                 or gcal_event['description'] != ical_event.description:
 
-                logger.info('> Updating event "%s" due to date/time change...' % (log_name))
+                logger.info('> Updating event "{}" due to date/time change...'.format(log_name))
                 delta = arrow.get(ical_event.end) - arrow.get(ical_event.begin)
                 # all-day events handled slightly differently
                 # TODO multi-day events?
@@ -253,12 +253,12 @@ if __name__ == '__main__':
             # TODO multi-day events?
             if delta.days >= 1:
                 gcal_event['start'] = get_gcal_date(ical_event.begin)
-                logger.info('iCal all-day event %s to be added at %s' % (ical_event.name, ical_event.begin))
+                logger.info('iCal all-day event {} to be added at {}'.format(ical_event.name, ical_event.begin))
                 if ical_event.has_end:
                     gcal_event['end'] = get_gcal_date(ical_event.end)
             else:
                 gcal_event['start'] = get_gcal_datetime(ical_event.begin, gcal_cal['timeZone'])
-                logger.info('iCal event %s to be added at %s' % (ical_event.name, ical_event.begin))
+                logger.info('iCal event {} to be added at {}'.format(ical_event.name, ical_event.begin))
                 if ical_event.has_end:
                     gcal_event['end'] = get_gcal_datetime(ical_event.end, gcal_cal['timeZone'])
 
