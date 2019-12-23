@@ -6,6 +6,8 @@ I've been running this script on an RPi as a cronjob and it's working well for m
 
 ## Using the script
 
+> NOTE: requires Python 3.x (2.7 will probably work, but hasn't been well-tested recently)
+
 Some brief instructions:
 1. Edit config.py and set ICAL_FEED to the URL of the iCal feed you want to sync events from.
 2. Set CALENDAR_ID to the ID of the Google Calendar instance you want to insert events into. You can set it to "primary" to use the default main calendar, or create a new secondary calendar (in which case you can find the ID on the settings page, of the form 'longID@group.calendar.google.com').
