@@ -184,7 +184,7 @@ if __name__ == '__main__':
             # your calendar, selecting "View bin" and then clicking "Empty bin 
             # now" to completely delete these events.
             try:
-                logger.info('> Deleting event "{}" from Google Calendar...'.format(gcal_event.get('summary', '<unnamed event>')))
+                logger.info(u'> Deleting event "{}" from Google Calendar...'.format(gcal_event.get('summary', '<unnamed event>')))
                 service.events().delete(calendarId=CALENDAR_ID, eventId=eid).execute()
                 time.sleep(API_SLEEP_TIME)
             except googleapiclient.errors.HttpError:
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 or (gcal_has_location and gcal_event['location'] != ical_event.location) \
                 or gcal_event['description'] != ical_event.description:
 
-                logger.info('> Updating event "{}" due to date/time change...'.format(log_name))
+                logger.info(u'> Updating event "{}" due to date/time change...'.format(log_name))
                 delta = arrow.get(ical_event.end) - arrow.get(ical_event.begin)
                 # all-day events handled slightly differently
                 # TODO multi-day events?
@@ -245,12 +245,12 @@ if __name__ == '__main__':
             # TODO multi-day events?
             if delta.days >= 1:
                 gcal_event['start'] = get_gcal_date(ical_event.begin)
-                logger.info('iCal all-day event {} to be added at {}'.format(ical_event.name, ical_event.begin))
+                logger.info(u'iCal all-day event {} to be added at {}'.format(ical_event.name, ical_event.begin))
                 if ical_event.has_end:
                     gcal_event['end'] = get_gcal_date(ical_event.end)
             else:
                 gcal_event['start'] = get_gcal_datetime(ical_event.begin, gcal_cal['timeZone'])
-                logger.info('iCal event {} to be added at {}'.format(ical_event.name, ical_event.begin))
+                logger.info(u'iCal event {} to be added at {}'.format(ical_event.name, ical_event.begin))
                 if ical_event.has_end:
                     gcal_event['end'] = get_gcal_datetime(ical_event.end, gcal_cal['timeZone'])
 
