@@ -24,3 +24,8 @@ LOGFILE = 'ical_to_gcal_sync_log.txt'
 
 # Time to pause between successive API calls that may trigger rate-limiting protection
 API_SLEEP_TIME = 0.05
+
+# Number of days worth of iCal events to sync from the ICAL_FEED defined above.
+# Must be a positive integer, e.g. 1 = events up to 24 hours ahead. Set to 0
+# or negative value to sync all events (default)
+ICAL_DAYS_TO_SYNC = 0

@@ -158,7 +158,15 @@ if __name__ == '__main__':
     for ev in ical_cal.events:
         # filter out events in the past, don't care about syncing them
         if arrow.get(ev.begin) > today:
-            ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
+            # optionally filter out events >24 hours ahead
+            if ICAL_DAYS_TO_SYNC > 0:
+                tdelta = ev.begin - arrow.now()
+                if tdelta.days >= ICAL_DAYS_TO_SYNC:
+                    logger.info(u'Filtering out event {} at {} due to ICAL_DAYS_TO_SYNC={}'.format(ev.name, ev.begin, ICAL_DAYS_TO_SYNC))
+                else:
+                    ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
+            else:
+                ical_events[create_id(ev.uid, ev.begin, ev.end)] = ev
 
     logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
