@@ -5,18 +5,14 @@ import time
 import string
 import re
 import sys
+import pickle
 
 import googleapiclient
-from apiclient import discovery
-from oauth2client import client
-from oauth2client import tools
-from oauth2client.file import Storage
-
 import requests
 import ics
 import arrow
-import httplib2
 
+from auth import auth_with_calendar_api
 from config import *
 
 logger = logging.getLogger(__name__)
@@ -137,9 +133,7 @@ def create_id(uid, begintime, endtime):
 if __name__ == '__main__':
     # setting up Google Calendar API for use
     logger.debug('> Loading credentials')
-    credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('calendar', 'v3', http=http)
+    service = auth_with_calendar_api()
 
     # retrieve events from Google Calendar, starting from beginning of current day
     today = arrow.now().replace(hour=0, minute=0, second=0, microsecond=0)
