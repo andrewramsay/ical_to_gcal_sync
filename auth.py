@@ -14,11 +14,12 @@ def auth_with_calendar_api():
     # created automatically when the auth flow succeeeds for 
     # the first time. 
     if os.path.exists(CREDENTIAL_PATH):
-        # handle trying to load a file from the old auth flow
+        # if credentials file fails to load (e.g. because it's the old
+        # style JSON content instead), just delete it
         try:
             with open(CREDENTIAL_PATH, 'rb') as token:
-                    creds = pickle.load(token)
-        except pickle.UnpicklingError as up:
+                creds = pickle.load(token)
+        except Exception as err:
             os.unlink(CREDENTIAL_PATH)
 
     if not creds or not creds.valid:
