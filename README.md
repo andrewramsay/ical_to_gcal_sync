@@ -6,7 +6,7 @@ I've been running this script on an RPi as a cronjob and it's working well for m
 
 ## Using the script
 
-> NOTE: requires Python 3.x (2.7 will probably work, but hasn't been well-tested recently)
+> NOTE: requires Python 3.7+ (2.7 can be made to work to some extent, but hasn't been well-tested recently and you may encounter bugs)
 
 Some brief instructions:
 1. Edit config.py and set ICAL_FEED to the URL of the iCal feed you want to sync events from.
