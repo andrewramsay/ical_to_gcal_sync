@@ -40,24 +40,6 @@ def get_current_events():
 
     return cal
 
-# modified from Google Calendar API quickstart example
-def get_credentials():
-    """Gets valid user credentials from storage.
-
-    If nothing has been stored, or if the stored credentials are invalid,
-    the OAuth2 flow is completed to obtain the new credentials.
-
-    Returns:
-        Credentials, the obtained credential.
-    """
-    store = Storage(CREDENTIAL_PATH)
-    credentials = store.get()
-    if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        flow.user_agent = APPLICATION_NAME
-        credentials = tools.run_flow(flow, store, None)
-    return credentials
-
 def get_gcal_events(service, from_time):
     """Retrieves the current set of Google Calendar events from the selected
     user calendar. Only includes upcoming events (those taking place from start
