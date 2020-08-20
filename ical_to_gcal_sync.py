@@ -12,7 +12,7 @@ import arrow
 from icalevents.icalevents import events
 from dateutil.tz import gettz
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from auth import auth_with_calendar_api
 from config import *
@@ -23,6 +23,8 @@ handler = logging.FileHandler(filename=LOGFILE, mode='a')
 handler.setFormatter(logging.Formatter('%(asctime)s|[%(levelname)s] %(message)s'))
 logger.addHandler(handler)
 
+DEFAULT_TIMEDELTA = timedelta(days=365)
+
 def get_current_events():
     """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
     containing the parsed data.
@@ -30,8 +32,16 @@ def get_current_events():
     Returns the parsed Calendar object or None if an error occurs.
     """
 
+    events_end = datetime.now()
+    if ICAL_DAYS_TO_SYNC == 0:
+        # default to 1 year ahead
+        events_end += DEFAULT_TIMEDELTA
+    else:
+        # add on a number of days
+        events_end += timedelta(days=ICAL_DAYS_TO_SYNC)
+
     try:
-        cal = events(ICAL_FEED)
+        cal = events(ICAL_FEED, end=events_end)
     except Exception as e:
         logger.error('> Error retrieving iCal data ({})'.format(e))
         return None
@@ -139,17 +149,7 @@ if __name__ == '__main__':
         if ev.end is not None and ev.end.tzinfo is None:
             ev.end = ev.end.replace(tzinfo=timezone.utc)
 
-        # filter out events in the past, don't care about syncing them
-        if ev.start > today:
-            # optionally filter out events >24 hours ahead
-            if ICAL_DAYS_TO_SYNC > 0:
-                tdelta = ev.start - datetime.now(timezone.utc)
-                if tdelta.days >= ICAL_DAYS_TO_SYNC:
-                    logger.info(u'Filtering out event {} at {} due to ICAL_DAYS_TO_SYNC={}'.format(ev.summary, ev.start, ICAL_DAYS_TO_SYNC))
-                else:
-                    ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
-            else:
-                ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
+        ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
 
     logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
