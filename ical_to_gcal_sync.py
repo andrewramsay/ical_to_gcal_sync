@@ -127,7 +127,6 @@ def create_id(uid, begintime, endtime):
         ID
     """
     allowed_chars = string.ascii_lowercase[:22] + string.digits
-    temp = re.sub('[^{}]'.format(allowed_chars), '', uid.lower())
     return re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
 
 if __name__ == '__main__':
