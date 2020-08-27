@@ -23,9 +23,18 @@ APPLICATION_NAME = 'ical_to_gcal_sync'
 LOGFILE = 'ical_to_gcal_sync_log.txt'
 
 # Time to pause between successive API calls that may trigger rate-limiting protection
-API_SLEEP_TIME = 0.05
-
-# Number of days worth of iCal events to sync from the ICAL_FEED defined above.
-# Must be a positive integer, e.g. 1 = events up to 24 hours ahead. Set to 0
-# or negative value to sync all events (default)
+API_SLEEP_TIME = 0.10
+   
+# Integer value >= 0
+# Controls the timespan within which events from ICAL_FEED will be processed 
+# by the script. 
+# 
+# For example, setting a value of 14 would sync all events from the current 
+# date+time up to a point 14 days in the future. 
+#
+# If you want to sync all events available from the feed this is also possible
+# by setting the value to 0, *BUT* be aware that due to an API limitation in the 
+# icalevents module which prevents an open-ended timespan being used, this will
+# actually be equivalent to "all events up to a year from now" (to sync events
+# further into the future than that, set a sufficiently high number of days).
 ICAL_DAYS_TO_SYNC = 0
