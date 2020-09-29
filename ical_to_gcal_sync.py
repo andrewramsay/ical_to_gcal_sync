@@ -5,7 +5,7 @@ import time
 import string
 import re
 import sys
-import pickle
+#import pickle
 
 import googleapiclient
 import arrow
@@ -15,7 +15,7 @@ from dateutil.tz import gettz
 from datetime import datetime, timezone, timedelta
 
 from auth import auth_with_calendar_api
-from config import *
+from config import ICAL_FEED, FILES, CALENDAR_ID, API_SLEEP_TIME, ICAL_DAYS_TO_SYNC, LOGFILE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -25,7 +25,24 @@ logger.addHandler(handler)
 
 DEFAULT_TIMEDELTA = timedelta(days=365)
 
-def get_current_events():
+
+def get_current_events_from_files():
+    """Retrieves data from iCal files"""
+
+    from glob import glob
+    
+    event_ics = glob(ICAL_FEED + '*.ics')
+    
+    ics = event_ics[0]
+    cal = get_current_events(ics)
+    for ics in event_ics[1:]:
+        evt = get_current_events(ics)
+        if len(evt) > 0:
+            cal.extend(evt)
+
+    return cal
+
+def get_current_events(feed):
     """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
     containing the parsed data.
 
@@ -41,7 +58,10 @@ def get_current_events():
         events_end += timedelta(days=ICAL_DAYS_TO_SYNC)
 
     try:
-        cal = events(ICAL_FEED, end=events_end)
+        if FILES:
+            cal = events(file=feed, end=events_end)
+        else:
+            cal = events(feed, end=events_end)
     except Exception as e:
         logger.error('> Error retrieving iCal data ({})'.format(e))
         return None
@@ -133,7 +153,10 @@ if __name__ == '__main__':
 
     # retrieve events from the iCal feed
     logger.info('> Retrieving events from iCal feed')
-    ical_cal = get_current_events()
+    if FILES:
+        ical_cal = get_current_events_from_files()
+    else:
+        ical_cal = get_current_events(ICAL_FEED)
 
     if ical_cal is None:
         sys.exit(-1)
@@ -191,7 +214,6 @@ if __name__ == '__main__':
             gcal_has_description = 'description' in gcal_event
             ical_has_description = ical_event.description is not None
 
-            
             # event name can be left unset, in which case there's no summary field
             gcal_name = gcal_event.get('summary', None)
             log_name = '<unnamed event>' if gcal_name is None else gcal_name
@@ -220,7 +242,11 @@ if __name__ == '__main__':
 
                 gcal_event['summary'] = ical_event.summary
                 gcal_event['description'] = ical_event.description
-                gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': ICAL_FEED}
+                if FILES:
+                    url_feed = 'https://nasa.gov'
+                else:
+                    url_feed = ICAL_FEED
+                gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': url_feed}
                 gcal_event['location'] = ical_event.location
 
                 service.events().update(calendarId=CALENDAR_ID, eventId=eid, body=gcal_event).execute()
