@@ -188,6 +188,10 @@ if __name__ == '__main__':
             gcal_has_location = 'location' in gcal_event
             ical_has_location = ical_event.location is not None
 
+            gcal_has_description = 'description' in gcal_event
+            ical_has_description = ical_event.description is not None
+
+            
             # event name can be left unset, in which case there's no summary field
             gcal_name = gcal_event.get('summary', None)
             log_name = '<unnamed event>' if gcal_name is None else gcal_name
@@ -199,7 +203,8 @@ if __name__ == '__main__':
                 or gcal_name != ical_event.summary\
                 or gcal_has_location != ical_has_location \
                 or (gcal_has_location and gcal_event['location'] != ical_event.location) \
-                or gcal_event['description'] != ical_event.description:
+                or gcal_has_description != ical_has_description \
+                or (gcal_has_description and gcal_event['description'] != ical_event.description):
 
                 logger.info(u'> Updating event "{}" due to date/time change...'.format(log_name))
                 delta = ical_event.end - ical_event.start
