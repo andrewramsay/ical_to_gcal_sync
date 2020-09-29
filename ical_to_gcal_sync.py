@@ -27,20 +27,29 @@ DEFAULT_TIMEDELTA = timedelta(days=365)
 
 
 def get_current_events_from_files():
-    """Retrieves data from iCal files"""
+    
+    """Retrieves data from iCal files.  Assumes that the files are all
+    *.ics files located in a single directory.
+
+    Returns the parsed Calendar object of None if no events are found.
+
+    """
 
     from glob import glob
-    
-    event_ics = glob(ICAL_FEED + '*.ics')
-    
-    ics = event_ics[0]
-    cal = get_current_events(ics)
-    for ics in event_ics[1:]:
-        evt = get_current_events(ics)
-        if len(evt) > 0:
-            cal.extend(evt)
+    from os.path import join
 
-    return cal
+    event_ics = glob(join(ICAL_FEED + '*.ics'))
+
+    if len(event_ics) > 0:
+        ics = event_ics[0]
+        cal = get_current_events(ics)
+        for ics in event_ics[1:]:
+            evt = get_current_events(ics)
+            if len(evt) > 0:
+                cal.extend(evt)
+        return cal
+    else:
+        return None
 
 def get_current_events(feed):
     """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
