@@ -243,7 +243,7 @@ if __name__ == '__main__':
                 gcal_event['summary'] = ical_event.summary
                 gcal_event['description'] = ical_event.description
                 if FILES:
-                    url_feed = 'https://nasa.gov'
+                    url_feed = 'https://www.google.com'
                 else:
                     url_feed = ICAL_FEED
                 gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': url_feed}
