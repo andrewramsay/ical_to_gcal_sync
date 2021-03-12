@@ -40,13 +40,18 @@ def get_current_events_from_files():
 
     event_ics = glob(join(ICAL_FEED, '*.ics'))
 
+    logger.debug('> Found {} local .ics files in {}'.format(len(event_ics), join(ICAL_FEED, '*.ics')))
     if len(event_ics) > 0:
         ics = event_ics[0]
+        logger.debug('> Loading file {}'.format(ics))
         cal = get_current_events(ics)
+        logger.debug('> Found {} new events'.format(len(cal)))
         for ics in event_ics[1:]:
+            logger.debug('> Loading file {}'.format(ics))
             evt = get_current_events(ics)
             if len(evt) > 0:
                 cal.extend(evt)
+            logger.debug('> Found {} new events'.format(len(evt)))
         return cal
     else:
         return None
@@ -161,10 +166,11 @@ if __name__ == '__main__':
     gcal_events = get_gcal_events(service, today.isoformat())
 
     # retrieve events from the iCal feed
-    logger.info('> Retrieving events from iCal feed')
     if FILES:
+        logger.info('> Retrieving events from local folder')
         ical_cal = get_current_events_from_files()
     else:
+        logger.info('> Retrieving events from iCal feed')
         ical_cal = get_current_events(ICAL_FEED)
 
     if ical_cal is None:
@@ -271,6 +277,7 @@ if __name__ == '__main__':
             gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
             gcal_event['location'] = ical_event.location
 
+
             # check if no time specified in iCal, treat as all day event if so
             delta = ical_event.end - ical_event.start
             # TODO multi-day events?
@@ -284,6 +291,8 @@ if __name__ == '__main__':
                 logger.info(u'iCal event {} to be added at {}'.format(ical_event.summary, ical_event.start))
                 if ical_event.end is not None:
                     gcal_event['end'] = get_gcal_datetime(ical_event.end, gcal_cal['timeZone'])
+
+            logger.info('Adding iCal event called "{}", starting {}'.format(ical_event.summary, gcal_event['start']))
 
             try:
                 time.sleep(API_SLEEP_TIME)
