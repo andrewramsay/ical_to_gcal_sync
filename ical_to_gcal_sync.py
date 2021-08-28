@@ -332,5 +332,7 @@ if __name__ == '__main__':
                 service.events().insert(calendarId=config['CALENDAR_ID'], body=gcal_event).execute()
             except:
                 time.sleep(config['API_SLEEP_TIME'])
-                service.events().update(calendarId=config['CALENDAR_ID'], eventId=gcal_event['id'], body=gcal_event).execute()
-                
+                try:
+                    service.events().update(calendarId=config['CALENDAR_ID'], eventId=gcal_event['id'], body=gcal_event).execute()
+                except Exception as ex:
+                    logger.error("Error updating: %s (%s)" % ( gcal_event['id'], ex ) )
