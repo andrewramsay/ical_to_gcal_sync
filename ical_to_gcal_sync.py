@@ -233,6 +233,9 @@ if __name__ == '__main__':
             # your calendar, selecting "View bin" and then clicking "Empty bin 
             # now" to completely delete these events.
             try:
+                # already marked as deleted, so it's in the "trash" or "bin"
+                if gcal_event['status'] == 'cancelled': continue
+
                 logger.info(u'> Deleting event "{}" from Google Calendar...'.format(gcal_event.get('summary', '<unnamed event>')))
                 service.events().delete(calendarId=config['CALENDAR_ID'], eventId=eid).execute()
                 time.sleep(config['API_SLEEP_TIME'])
