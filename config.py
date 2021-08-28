@@ -56,3 +56,16 @@ PAST_DAYS_TO_SYNC = 30
 # will be restored by this script - otherwise they will be left deleted, but will
 # be updated - just Google won't show them
 RESTORE_DELETED_EVENTS = True
+
+# function to modify events coming from the ical source before they get compared
+# to the Google Calendar entries and inserted/deleted
+#
+# this function should modify the events in-place and return either True (keep) or
+# False (delete/skip) the event from the Calendar. If this returns False on an event
+# that is already in the Google Calendar, the event will be deleted from the Google
+# Calendar
+import icalevents
+def EVENT_PREPROCESSOR(ev: icalevents.icalparser.Event) -> bool:
+    # include all entries by default
+    # see README.md for examples of rules that make changes/skip
+    return True

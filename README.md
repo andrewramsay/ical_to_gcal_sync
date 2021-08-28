@@ -24,3 +24,33 @@ If you want to specify an alternate location for the config.py file, use the env
 ```
 CONFIG_PATH='/path/to/my-custom-config.py' python ical_to_gcal_sync.py
 ```
+
+## Rewriting Events / Skipping Events
+
+If you specify a function in the config file called EVENT_PREPROESSOR, you can use that
+function to rewrite or even skip events from being synced to the Google Calendar.
+
+Some example rewrite rules:
+
+``` python
+import icalevents
+def EVENT_PREPROCESSOR(ev: icalevents.icalparser.Event) -> bool:
+    from datetime import timedelta
+
+    # Skip Bob's out of office messages
+    if ev.summary == "Bob OOO":
+        return False
+
+    # Skip gaming events when we're playing Monopoly
+    if ev.summary == "Gaming" and "Monopoly" in ev.description:
+        return False
+
+    # convert fire drill events to all-day events
+    if ev.summary == "Fire Drill":
+        ev.all_day = True
+        ev.start = ev.start.replace(hour=0, minute=0, second=0)
+        ev.end = ev.start + timedelta(days=1)
+
+    # include all other entries
+    return True
+```

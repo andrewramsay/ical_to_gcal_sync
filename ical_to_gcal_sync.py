@@ -197,6 +197,16 @@ if __name__ == '__main__':
         if ev.end is not None and ev.end.tzinfo is None:
             ev.end = ev.end.replace(tzinfo=timezone.utc)
 
+        try:
+            if 'EVENT_PREPROCESSOR' in config:
+                keep = config['EVENT_PREPROCESSOR'](ev)
+                if not keep: 
+                    logger.debug("Skipping event %s - EVENT_PREPROCESSOR returned false" % (str(ev)))
+                    continue
+
+        except Exception as ex:
+            logger.error("Error processing entry (%s) - leaving as-is" % str(ev))
+
         ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
 
     logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
