@@ -9,9 +9,48 @@ I've been running this script on an RPi as a cronjob and it's working well for m
 > NOTE: requires Python 3.7+ (2.7 can be made to work to some extent, but hasn't been well-tested recently and you may encounter bugs)
 
 Some brief instructions:
-1. Edit config.py and set ICAL_FEED to the URL of the iCal feed you want to sync events from.
-2. Set CALENDAR_ID to the ID of the Google Calendar instance you want to insert events into. You can set it to "primary" to use the default main calendar, or create a new secondary calendar (in which case you can find the ID on the settings page, of the form 'longID@group.calendar.google.com').
-3. pip install -r requirements.txt
-4. Go through the process of registering an app in the Google Calendar API dashboard in order to obtain the necessary API credentials. This process is described at https://developers.google.com/google-apps/calendar/quickstart/python - rename the downloaded file to ical_to_gcal_sync_client_secret.json and place it in the same location as the script. 
-5. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 4 to access your calendars. If successful it should store the credentials in ical_to_gcal_sync.json.
-6. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
+1. Edit config.py or copy to new file (see *Multiple Configurations* below)
+2. Set ICAL_FEED to the URL of the iCal feed you want to sync events from.
+3. Set CALENDAR_ID to the ID of the Google Calendar instance you want to insert events into. You can set it to "primary" to use the default main calendar, or create a new secondary calendar (in which case you can find the ID on the settings page, of the form 'longID@group.calendar.google.com').
+4. pip install -r requirements.txt
+5. Go through the process of registering an app in the Google Calendar API dashboard in order to obtain the necessary API credentials. This process is described at https://developers.google.com/google-apps/calendar/quickstart/python - rename the downloaded file to ical_to_gcal_sync_client_secret.json and place it in the same location as the script. 
+6. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 4 to access your calendars. If successful it should store the credentials in ical_to_gcal_sync.json.
+7. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
+
+## Multiple Configurations / Alternate Config Location
+
+If you want to specify an alternate location for the config.py file, use the environment variable CONFIG_PATH:
+
+```
+CONFIG_PATH='/path/to/my-custom-config.py' python ical_to_gcal_sync.py
+```
+
+## Rewriting Events / Skipping Events
+
+If you specify a function in the config file called EVENT_PREPROESSOR, you can use that
+function to rewrite or even skip events from being synced to the Google Calendar.
+
+Some example rewrite rules:
+
+``` python
+import icalevents
+def EVENT_PREPROCESSOR(ev: icalevents.icalparser.Event) -> bool:
+    from datetime import timedelta
+
+    # Skip Bob's out of office messages
+    if ev.summary == "Bob OOO":
+        return False
+
+    # Skip gaming events when we're playing Monopoly
+    if ev.summary == "Gaming" and "Monopoly" in ev.description:
+        return False
+
+    # convert fire drill events to all-day events
+    if ev.summary == "Fire Drill":
+        ev.all_day = True
+        ev.start = ev.start.replace(hour=0, minute=0, second=0)
+        ev.end = ev.start + timedelta(days=1)
+
+    # include all other entries
+    return True
+```
