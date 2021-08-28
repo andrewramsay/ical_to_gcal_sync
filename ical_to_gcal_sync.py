@@ -69,7 +69,7 @@ def get_current_events(feed):
     """
 
     events_end = datetime.now()
-    if config['ICAL_DAYS_TO_SYNC'] == 0:
+    if config.get('ICAL_DAYS_TO_SYNC', 0) == 0:
         # default to 1 year ahead
         events_end += DEFAULT_TIMEDELTA
     else:
@@ -80,17 +80,16 @@ def get_current_events(feed):
         if config['FILES']:
             cal = events(file=feed, end=events_end)
         else:
-            cal = events(feed, end=events_end)
+            cal = events(feed, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC',0)), end=events_end)
     except Exception as e:
         logger.error('> Error retrieving iCal data ({})'.format(e))
         return None
 
     return cal
 
-def get_gcal_events(service, from_time):
+def get_gcal_events(service, from_time=None):
     """Retrieves the current set of Google Calendar events from the selected
-    user calendar. Only includes upcoming events (those taking place from start
-    of the current day. 
+    user calendar. If from_time is not specified, includes events from all-time.
 
     Returns a dict containing the event(s) existing in the calendar.
     """
@@ -131,7 +130,7 @@ def get_gcal_events(service, from_time):
     return events
 
 def delete_all_events(service):
-    for gc in get_gcal_events(service):
+    for gc in get_gcal_events(service, from_time=None):
         try:
             service.events().delete(calendarId=config['CALENDAR_ID'], eventId=gc['id']).execute()
             time.sleep(config['API_SLEEP_TIME'])
@@ -174,8 +173,8 @@ if __name__ == '__main__':
 
     # retrieve events from Google Calendar, starting from beginning of current day
     logger.info('> Retrieving events from Google Calendar')
-    gcal_events = get_gcal_events(service, today.isoformat())
-    
+    gcal_events = get_gcal_events(service, from_time=(today-timedelta(days=config.get('PAST_DAYS_TO_SYNC',0))).isoformat())
+
     # retrieve events from the iCal feed
     if config['FILES']:
         logger.info('> Retrieving events from local folder')

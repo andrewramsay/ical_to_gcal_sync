@@ -40,3 +40,13 @@ API_SLEEP_TIME = 0.10
 # actually be equivalent to "all events up to a year from now" (to sync events
 # further into the future than that, set a sufficiently high number of days).
 ICAL_DAYS_TO_SYNC = 0
+
+# Integer value >= 0
+# Controls how many days in the past to query/update from Google and the ical source.
+# If you want to only worry about today's events and future events, set to 0,
+# otherwise set to a positive number (e.g. 30) to include that many days in the past.
+# Any events outside of that time-range will be untouched in the Google Calendar.
+# If the ical source doesn't include historical events, then this will mean deleting
+# a rolling number of days historical calendar entries from Google Calendar as the script
+# runs
+PAST_DAYS_TO_SYNC = 30
