@@ -233,8 +233,8 @@ if __name__ == '__main__':
             gcal_begin = arrow.get(gcal_event['start'].get('dateTime', gcal_event['start'].get('date')))
             gcal_end = arrow.get(gcal_event['end'].get('dateTime', gcal_event['end'].get('date')))
 
-            gcal_has_location = 'location' in gcal_event
-            ical_has_location = ical_event.location is not None
+            gcal_has_location = bool(gcal_event.get('location'))
+            ical_has_location = bool(ical_event.location)
 
             gcal_has_description = 'description' in gcal_event
             ical_has_description = ical_event.description is not None
@@ -243,17 +243,21 @@ if __name__ == '__main__':
             gcal_name = gcal_event.get('summary', None)
             log_name = '<unnamed event>' if gcal_name is None else gcal_name
 
+            times_differ = gcal_begin != ical_event.start or gcal_end != ical_event.end
+            titles_differ = gcal_name != ical_event.summary
+            locs_differ = gcal_has_location != ical_has_location and gcal_event.get('location') != ical_event.location
+            descs_differ = gcal_has_description != ical_has_description and (gcal_event.get('description') != ical_event.description)
+
+            changes = []
+            if times_differ: changes.append("start/end times")
+            if titles_differ: changes.append("titles")
+            if locs_differ: changes.append("locations")
+            if descs_differ: changes.append("descriptions")
+
             # check if the iCal event has a different: start/end time, name, location,
             # or description, and if so sync the changes to the GCal event
-            if gcal_begin != ical_event.start\
-                or gcal_end != ical_event.end\
-                or gcal_name != ical_event.summary\
-                or gcal_has_location != ical_has_location \
-                or (gcal_has_location and gcal_event['location'] != ical_event.location) \
-                or gcal_has_description != ical_has_description \
-                or (gcal_has_description and gcal_event['description'] != ical_event.description):
-
-                logger.info(u'> Updating event "{}" due to date/time change...'.format(log_name))
+            if times_differ or titles_differ or locs_differ or descs_differ:
+                logger.info(u'> Updating event "{}" due to changes: {}'.format(log_name, ", ".join(changes)))
                 delta = ical_event.end - ical_event.start
                 # all-day events handled slightly differently
                 # TODO multi-day events?
