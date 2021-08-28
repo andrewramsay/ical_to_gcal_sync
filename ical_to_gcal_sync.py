@@ -5,7 +5,7 @@ import time
 import string
 import re
 import sys
-#import pickle
+import os
 
 import googleapiclient
 import arrow
@@ -15,16 +15,21 @@ from dateutil.tz import gettz
 from datetime import datetime, timezone, timedelta
 
 from auth import auth_with_calendar_api
-from config import ICAL_FEED, FILES, CALENDAR_ID, API_SLEEP_TIME, ICAL_DAYS_TO_SYNC, LOGFILE
+from pathlib import Path
+config = {}
+config_path=os.environ.get('CONFIG_PATH', 'config.py')
+exec(Path(config_path).read_text(), config)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename=LOGFILE, mode='a')
+if config.get('LOGFILE', None):
+    handler = logging.FileHandler(filename=config['LOGFILE'], mode='a')
+else:
+    handler = logging.StreamHandler(sys.stderr)
 handler.setFormatter(logging.Formatter('%(asctime)s|[%(levelname)s] %(message)s'))
 logger.addHandler(handler)
 
 DEFAULT_TIMEDELTA = timedelta(days=365)
-
 
 def get_current_events_from_files():
     
@@ -38,9 +43,9 @@ def get_current_events_from_files():
     from glob import glob
     from os.path import join
 
-    event_ics = glob(join(ICAL_FEED, '*.ics'))
+    event_ics = glob(join(config['ICAL_FEED'], '*.ics'))
 
-    logger.debug('> Found {} local .ics files in {}'.format(len(event_ics), join(ICAL_FEED, '*.ics')))
+    logger.debug('> Found {} local .ics files in {}'.format(len(event_ics), join(config['ICAL_FEED'], '*.ics')))
     if len(event_ics) > 0:
         ics = event_ics[0]
         logger.debug('> Loading file {}'.format(ics))
@@ -64,15 +69,15 @@ def get_current_events(feed):
     """
 
     events_end = datetime.now()
-    if ICAL_DAYS_TO_SYNC == 0:
+    if config['ICAL_DAYS_TO_SYNC'] == 0:
         # default to 1 year ahead
         events_end += DEFAULT_TIMEDELTA
     else:
         # add on a number of days
-        events_end += timedelta(days=ICAL_DAYS_TO_SYNC)
+        events_end += timedelta(days=config['ICAL_DAYS_TO_SYNC'])
 
     try:
-        if FILES:
+        if config['FILES']:
             cal = events(file=feed, end=events_end)
         else:
             cal = events(feed, end=events_end)
@@ -97,7 +102,7 @@ def get_gcal_events(service, from_time):
     logger.debug('Retrieving Google Calendar events')
 
     # make an initial call, if this returns all events we don't need to do anything else,,,
-    eventsResult = service.events().list(calendarId=CALENDAR_ID, 
+    eventsResult = service.events().list(calendarId=config['CALENDAR_ID'], 
                                          timeMin=from_time, 
                                          singleEvents=True, 
                                          orderBy='startTime', 
@@ -112,7 +117,7 @@ def get_gcal_events(service, from_time):
     # otherwise keep calling the method, passing back the nextPageToken each time
     while 'nextPageToken' in eventsResult:
         token = eventsResult['nextPageToken']
-        eventsResult = service.events().list(calendarId=CALENDAR_ID, 
+        eventsResult = service.events().list(calendarId=config['CALENDAR_ID'], 
                                              timeMin=from_time, 
                                              pageToken=token, 
                                              singleEvents=True, 
@@ -128,8 +133,8 @@ def get_gcal_events(service, from_time):
 def delete_all_events(service):
     for gc in get_gcal_events(service):
         try:
-            service.events().delete(calendarId=CALENDAR_ID, eventId=gc['id']).execute()
-            time.sleep(API_SLEEP_TIME)
+            service.events().delete(calendarId=config['CALENDAR_ID'], eventId=gc['id']).execute()
+            time.sleep(config['API_SLEEP_TIME'])
         except googleapiclient.errors.HttpError:
             pass # event already marked as deleted
 
@@ -154,9 +159,15 @@ def create_id(uid, begintime, endtime):
     return re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
 
 if __name__ == '__main__':
+    mandatory_configs = ['CALENDAR_ID', 'CREDENTIAL_PATH', 'ICAL_FEED', 'APPLICATION_NAME']
+    for mandatory in mandatory_configs:
+        if not config.get(mandatory) or config[mandatory][0] == '<':
+            logger.error("Must specify a non-blank value for %s in the config file" % ( mandatory ) )
+            sys.exit(1)
+
     # setting up Google Calendar API for use
     logger.debug('> Loading credentials')
-    service = auth_with_calendar_api()
+    service = auth_with_calendar_api(config)
 
     # dateime instance representing the start of the current day (UTC)
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -164,14 +175,14 @@ if __name__ == '__main__':
     # retrieve events from Google Calendar, starting from beginning of current day
     logger.info('> Retrieving events from Google Calendar')
     gcal_events = get_gcal_events(service, today.isoformat())
-
+    
     # retrieve events from the iCal feed
-    if FILES:
+    if config['FILES']:
         logger.info('> Retrieving events from local folder')
         ical_cal = get_current_events_from_files()
     else:
         logger.info('> Retrieving events from iCal feed')
-        ical_cal = get_current_events(ICAL_FEED)
+        ical_cal = get_current_events(config['ICAL_FEED'])
 
     if ical_cal is None:
         sys.exit(-1)
@@ -192,7 +203,7 @@ if __name__ == '__main__':
     logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
     # retrieve the Google Calendar object itself
-    gcal_cal = service.calendars().get(calendarId=CALENDAR_ID).execute()
+    gcal_cal = service.calendars().get(calendarId=config['CALENDAR_ID']).execute()
 
     logger.info('> Processing Google Calendar events...')
     gcal_event_ids = [ev['id'] for ev in gcal_events]
@@ -214,8 +225,8 @@ if __name__ == '__main__':
             # now" to completely delete these events.
             try:
                 logger.info(u'> Deleting event "{}" from Google Calendar...'.format(gcal_event.get('summary', '<unnamed event>')))
-                service.events().delete(calendarId=CALENDAR_ID, eventId=eid).execute()
-                time.sleep(API_SLEEP_TIME)
+                service.events().delete(calendarId=config['CALENDAR_ID'], eventId=eid).execute()
+                time.sleep(config['API_SLEEP_TIME'])
             except googleapiclient.errors.HttpError:
                 pass # event already marked as deleted
         else:
@@ -257,15 +268,15 @@ if __name__ == '__main__':
 
                 gcal_event['summary'] = ical_event.summary
                 gcal_event['description'] = ical_event.description
-                if FILES:
+                if config['FILES']:
                     url_feed = 'https://www.google.com'
                 else:
-                    url_feed = ICAL_FEED
+                    url_feed = config['ICAL_FEED']
                 gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': url_feed}
                 gcal_event['location'] = ical_event.location
 
-                service.events().update(calendarId=CALENDAR_ID, eventId=eid, body=gcal_event).execute()
-                time.sleep(API_SLEEP_TIME)
+                service.events().update(calendarId=config['CALENDAR_ID'], eventId=eid, body=gcal_event).execute()
+                time.sleep(config['API_SLEEP_TIME'])
 
     # now add any iCal events not already in the Google Calendar 
     logger.info('> Processing iCal events...')
@@ -295,8 +306,9 @@ if __name__ == '__main__':
             logger.info('Adding iCal event called "{}", starting {}'.format(ical_event.summary, gcal_event['start']))
 
             try:
-                time.sleep(API_SLEEP_TIME)
-                service.events().insert(calendarId=CALENDAR_ID, body=gcal_event).execute()
+                time.sleep(config['API_SLEEP_TIME'])
+                service.events().insert(calendarId=config['CALENDAR_ID'], body=gcal_event).execute()
             except:
-                time.sleep(API_SLEEP_TIME)
-                service.events().update(calendarId=CALENDAR_ID, eventId=gcal_event['id'], body=gcal_event).execute()
+                time.sleep(config['API_SLEEP_TIME'])
+                service.events().update(calendarId=config['CALENDAR_ID'], eventId=gcal_event['id'], body=gcal_event).execute()
+                
