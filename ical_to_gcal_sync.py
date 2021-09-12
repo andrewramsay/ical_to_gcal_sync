@@ -300,7 +300,7 @@ if __name__ == '__main__':
                 gcal_event['summary'] = ical_event.summary
                 gcal_event['description'] = ical_event.description
                 if config['FILES']:
-                    url_feed = '-'
+                    url_feed = 'https://events.from.ics.files.com'
                 else:
                     url_feed = config['ICAL_FEED']
                 gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
@@ -318,7 +318,7 @@ if __name__ == '__main__':
             gcal_event['id'] = ical_id
             gcal_event['description'] = ical_event.description
             if config['FILES']:
-                url_feed = '-'
+                url_feed = 'https://events.from.ics.files.com'
             else:
                 url_feed = config['ICAL_FEED']
             gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
