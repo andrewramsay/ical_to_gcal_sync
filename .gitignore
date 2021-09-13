@@ -1,3 +1,10 @@
+
+# Sensitive files
+
+/client_secret.json
+/credentials.pckl
+/config.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

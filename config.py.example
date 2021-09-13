@@ -4,6 +4,15 @@
 ICAL_FEED = ''
 FILES = False
 
+# Authentication information for the iCalendar feed
+# If the feed does not require authentication or if FILES is true, it should be left to None
+ICAL_FEED_USER = None
+ICAL_FEED_PASS = None
+
+# If the iCalendar server is using a self signed ssl certificate, certificate checking must be disabled.
+# If unsure left it to True
+ICAL_FEED_VERIFY_SSL_CERT = True
+
 # the ID of the calendar to use for iCal events, should be of the form
 # 'ID@group.calendar.google.com', check the calendar settings page to find it.
 # (can also be 'primary' to use the default calendar)
@@ -26,7 +35,7 @@ LOGFILE = '<LOG_FILE_PATH.log>'
 
 # Time to pause between successive API calls that may trigger rate-limiting protection
 API_SLEEP_TIME = 0.10
-   
+
 # Integer value >= 0
 # Controls the timespan within which events from ICAL_FEED will be processed 
 # by the script. 

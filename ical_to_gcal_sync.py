@@ -16,6 +16,8 @@ from datetime import datetime, timezone, timedelta
 
 from auth import auth_with_calendar_api
 from pathlib import Path
+from httplib2 import Http
+
 config = {}
 config_path=os.environ.get('CONFIG_PATH', 'config.py')
 exec(Path(config_path).read_text(), config)
@@ -80,7 +82,14 @@ def get_current_events(feed):
         if config['FILES']:
             cal = events(file=feed, end=events_end)
         else:
-            cal = events(feed, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC',0)), end=events_end)
+            # directly configure http connection object to set ssl and authentication parameters
+            http_conn = Http(cache='.cache', disable_ssl_certificate_validation=not config.get('ICAL_FEED_VERIFY_SSL_CERT', True))
+
+            if config.get('ICAL_FEED_USER') and config.get('ICAL_FEED_PASS'):
+                # credentials used for every connection
+                http_conn.add_credentials(name=config.get('ICAL_FEED_USER'), password=config.get('ICAL_FEED_PASS'))
+
+            cal = events(feed, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)), end=events_end, http=http_conn)
     except Exception as e:
         logger.error('> Error retrieving iCal data ({})'.format(e))
         return None
@@ -291,10 +300,10 @@ if __name__ == '__main__':
                 gcal_event['summary'] = ical_event.summary
                 gcal_event['description'] = ical_event.description
                 if config['FILES']:
-                    url_feed = 'https://www.google.com'
+                    url_feed = 'https://events.from.ics.files.com'
                 else:
                     url_feed = config['ICAL_FEED']
-                gcal_event['source'] = {'title': 'imported from ical_to_gcal_sync.py', 'url': url_feed}
+                gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
                 gcal_event['location'] = ical_event.location
 
                 service.events().update(calendarId=config['CALENDAR_ID'], eventId=eid, body=gcal_event).execute()
@@ -307,7 +316,12 @@ if __name__ == '__main__':
             gcal_event = {}
             gcal_event['summary'] = ical_event.summary
             gcal_event['id'] = ical_id
-            gcal_event['description'] = '%s (Imported from mycal.py)' % ical_event.description
+            gcal_event['description'] = ical_event.description
+            if config['FILES']:
+                url_feed = 'https://events.from.ics.files.com'
+            else:
+                url_feed = config['ICAL_FEED']
+            gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
             gcal_event['location'] = ical_event.location
 
 
