@@ -84,7 +84,7 @@ def get_current_events(feed_url_or_path, files):
             cal = events(file=feed_url_or_path, end=events_end)
         else:
             # directly configure http connection object to set ssl and authentication parameters
-            http_conn = Http(cache='.cache', disable_ssl_certificate_validation=not config.get('ICAL_FEED_VERIFY_SSL_CERT', True))
+            http_conn = Http(disable_ssl_certificate_validation=not config.get('ICAL_FEED_VERIFY_SSL_CERT', True))
 
             if config.get('ICAL_FEED_USER') and config.get('ICAL_FEED_PASS'):
                 # credentials used for every connection
