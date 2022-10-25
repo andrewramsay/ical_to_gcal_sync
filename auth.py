@@ -25,7 +25,7 @@ def auth_with_calendar_api(config):
     if os.path.exists(config['CREDENTIAL_PATH']):
         try:
             logger.info('Loading cached credentials')
-            creds = Credentials.from_authorized_user_file(config['CREDENTIAL_PATH'], config['SCOPES'])
+            creds = Credentials.from_authorized_user_file(config['CREDENTIAL_PATH'], [config['SCOPES']])
         except Exception as e:
             logger.warning(f'Failed to load cached credentials, exception was "{str(e)}"')
             os.unlink(config['CREDENTIAL_PATH'])

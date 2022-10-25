@@ -212,7 +212,7 @@ if __name__ == '__main__':
             except Exception as ex:
                 logger.error("Error processing entry (%s) - leaving as-is" % str(ev))
 
-            ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
+            ical_events[create_id(ev.uid, ev.start, ev.end, config.get('EVENT_ID_PREFIX', ''))] = ev
 
         logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
