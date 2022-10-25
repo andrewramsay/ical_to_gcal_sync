@@ -88,3 +88,19 @@ def EVENT_PREPROCESSOR(ev: icalevents.icalparser.Event) -> bool:
     # include all entries by default
     # see README.md for examples of rules that make changes/skip
     return True
+
+# Sometimes you can encounter an annoying situation where events have been fully deleted
+# (by manually emptying the "Bin" for the calendar), but attempting to add new events with
+# the same UIDs will continue to fail. Inserts will produce a 409 "already exists" error,
+# and updtes will produce a 403 "Forbidden" error. Probably because the events are still
+# stored somewhere even though they are no longer visible to the API or through the web
+# interface. 
+#
+# If you run into this situation and don't want to create a fresh calendar, you can try 
+# setting this value to something other than an empty string. It will be used as a prefix
+# for new event UIDs, so changing it from the default will prevent the same IDs from being
+# reused and allow them to be inserted as normal.
+#
+# NOTE: Characters allowed in the ID are those used in base32hex encoding, i.e. lowercase 
+# letters a-v and digits 0-9, see section 3.1.2 in RFC2938
+EVENT_ID_PREFIX = ''
