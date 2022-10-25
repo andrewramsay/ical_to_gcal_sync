@@ -146,7 +146,7 @@ def get_gcal_datetime(py_datetime, gcal_timezone):
 def get_gcal_date(py_datetime):
     return {u'date': py_datetime.strftime('%Y-%m-%d')}
 
-def create_id(uid, begintime, endtime):
+def create_id(uid, begintime, endtime, prefix=''):
     """ Converts ical UUID, begin and endtime to a valid Gcal ID
 
     Characters allowed in the ID are those used in base32hex encoding, i.e. lowercase letters a-v and digits 0-9, see section 3.1.2 in RFC2938
@@ -157,7 +157,7 @@ def create_id(uid, begintime, endtime):
         ID
     """
     allowed_chars = string.ascii_lowercase[:22] + string.digits
-    return re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
+    return prefix + re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).int_timestamp) + str(arrow.get(endtime).int_timestamp)
 
 if __name__ == '__main__':
     mandatory_configs = ['CREDENTIAL_PATH', 'ICAL_FEEDS', 'APPLICATION_NAME']
