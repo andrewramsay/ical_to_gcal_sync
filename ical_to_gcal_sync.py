@@ -210,7 +210,7 @@ if __name__ == '__main__':
                         continue
 
             except Exception as ex:
-                logger.error("Error processing entry (%s) - leaving as-is" % str(ev))
+                logger.error("Error processing entry (%s, %s) - leaving as-is" % (str(ev), str(ex)))
 
             ical_events[create_id(ev.uid, ev.start, ev.end, config.get('EVENT_ID_PREFIX', ''))] = ev
 
@@ -320,7 +320,6 @@ if __name__ == '__main__':
                 gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
                 gcal_event['location'] = ical_event.location
 
-
                 # check if no time specified in iCal, treat as all day event if so
                 delta = ical_event.end - ical_event.start
                 # TODO multi-day events?
@@ -340,11 +339,12 @@ if __name__ == '__main__':
                 try:
                     time.sleep(config['API_SLEEP_TIME'])
                     service.events().insert(calendarId=feed['destination'], body=gcal_event).execute()
-                except Exception:
+                except Exception as ei:
+                    logger.warning("Error inserting: %s (%s)" % (gcal_event['id'], str(ei)))
                     time.sleep(config['API_SLEEP_TIME'])
                     try:
                         service.events().update(calendarId=feed['destination'], eventId=gcal_event['id'], body=gcal_event).execute()
                     except Exception as ex:
-                        logger.error("Error updating: %s (%s)" % ( gcal_event['id'], ex ) )
+                        logger.error("Error updating: %s (%s)" % (gcal_event['id'], ex))
 
         logger.info('> Processing of source %s completed' % feed['source'])
