@@ -35,7 +35,7 @@ SCOPES = 'https://www.googleapis.com/auth/calendar'
 CLIENT_SECRET_FILE = '<CLIENT_SECRET_FILE.json>'
 
 # Location to store API credentials
-CREDENTIAL_PATH = '<CREDENTIALS_PATH.pckl>'
+CREDENTIAL_PATH = '<CREDENTIALS_PATH.json>'
 
 # Application name for the Google Calendar API
 APPLICATION_NAME = 'ical_to_gcal_sync'
