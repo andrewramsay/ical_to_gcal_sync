@@ -1,23 +1,20 @@
 import os
-import pickle
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 
 def auth_with_calendar_api(config):
-    creds = None
 
     # this file stores your access and refresh tokens, and is
     # created automatically when the auth flow succeeeds for 
     # the first time. 
+    creds = None
     if os.path.exists(config['CREDENTIAL_PATH']):
-        # if credentials file fails to load (e.g. because it's the old
-        # style JSON content instead), just delete it
         try:
-            with open(config['CREDENTIAL_PATH'], 'rb') as token:
-                creds = pickle.load(token)
-        except Exception as err:
+            creds = Credentials.from_authorized_user_file(config['CREDENTIAL_PATH'], config['SCOPES'])
+        except Exception as e:
             os.unlink(config['CREDENTIAL_PATH'])
 
     if not creds or not creds.valid:
@@ -26,13 +23,12 @@ def auth_with_calendar_api(config):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(config['CLIENT_SECRET_FILE'],
                                                              [config['SCOPES']])
-            creds = flow.run_console() # or run_local_server(port=0)
+            creds = flow.run_local_server(port=0)
 
         # save credentials if successful
-        with open(config['CREDENTIAL_PATH'], 'wb') as token:
-            pickle.dump(creds, token)
+        with open(config['CREDENTIAL_PATH'], 'w') as token:
+            token.write(creds.to_json())
 
     service = build('calendar', 'v3', credentials=creds)
-
     return service
 
