@@ -39,8 +39,7 @@ def get_current_events_from_files(path):
     """Retrieves data from iCal files.  Assumes that the files are all
     *.ics files located in a single directory.
 
-    Returns the parsed Calendar object of None if no events are found.
-
+    Returns the parsed list of events or None if an error occurs.
     """
 
     from glob import glob
@@ -65,10 +64,10 @@ def get_current_events_from_files(path):
         return None
 
 def get_current_events(feed_url_or_path, files):
-    """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
-    containing the parsed data.
+    """Retrieves data from an iCal feed and returns a list of icalevents
+    Event objects
 
-    Returns the parsed Calendar object or None if an error occurs.
+    Returns the parsed list of events or None if an error occurs.
     """
 
     events_end = datetime.now()
