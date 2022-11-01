@@ -32,16 +32,16 @@ ICAL_FEED_VERIFY_SSL_CERT = True
 SCOPES = 'https://www.googleapis.com/auth/calendar'
 
 # API secret stored in this file
-CLIENT_SECRET_FILE = '<CLIENT_SECRET_FILE.json>'
+CLIENT_SECRET_FILE = 'ical_to_gcal_sync_client_secret.json'
 
 # Location to store API credentials
-CREDENTIAL_PATH = '<CREDENTIALS_PATH.json>'
+CREDENTIAL_PATH = 'ical_to_gcal_sync_credentials.json'
 
 # Application name for the Google Calendar API
 APPLICATION_NAME = 'ical_to_gcal_sync'
 
 # File to use for logging output
-LOGFILE = '<LOG_FILE_PATH.log>'
+LOGFILE = 'ical_to_gcal_sync.log'
 
 # Time to pause between successive API calls that may trigger rate-limiting protection
 API_SLEEP_TIME = 0.10
