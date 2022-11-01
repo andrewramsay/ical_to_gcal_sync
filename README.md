@@ -32,6 +32,13 @@ ICAL_FEEDS = [
 7. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 5 to access your calendars. If successful it should store the credentials in `ical_to_gcal_sync.json`.
 8. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
 
+## OAuth workarounds
+
+If you're running the script on a headless device you may have some issues with step 7 above. It normally attempts to auto-open a browser to allow you to authorise the request, and will print a URL to visit instead if it can't find a browser/display. You can visit this URL from another device, but the final step in the auth flow is an HTTP request sent back to the server started by `auth.py`. This will fail when you're using another device because the URL it redirects your browser to will be `http://localhost:port/...`. To workaround this there are a few options:
+ - clone the repo to another machine, run the auth flow there, and then copy the saved credentials file to the headless device
+ - copy the `http://localhost:port/...` URL and then in an SSH session on the headless device run `curl <URL>` 
+ - alternatively if your headless device has open ports, you can modify the `run_local_server()` line in auth.py to have the Google redirect point to a hostname other than `localhost`. See the `host` and `port` parameters in the [documentation](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.InstalledAppFlow.run_local_server) 
+
 ## Multiple Configurations / Alternate Config Location
 
 If you want to specify an alternate location for the config.py file, use the environment variable CONFIG_PATH:
