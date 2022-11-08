@@ -6,16 +6,38 @@ I've been running this script on an RPi as a cronjob and it's working well for m
 
 ## Using the script
 
-> NOTE: requires Python 3.7+ (2.7 can be made to work to some extent, but hasn't been well-tested recently and you may encounter bugs)
+> NOTE: requires Python 3.7+
 
-Some brief instructions:
 1. Copy `config.py.example` to a new file `config.py` or a custom file (see *Multiple Configurations* below)
-2. Set `ICAL_FEEDS` to the URL of the iCal feed you want to sync events from. If the feed is password protected set also the variables `ICAL_FEED_USER` and `ICAL_FEED_PASS`.
-3. Set `CALENDAR_ID` to the ID of the Google Calendar instance you want to insert events into. You can set it to `primary` to use the default main calendar, or create a new secondary calendar (in which case you can find the ID on the settings page, of the form `longID@group.calendar.google.com`).
-4. `pip install -r requirements.txt`
-5. Go through the process of registering an app in the Google Calendar API dashboard in order to obtain the necessary API credentials. This process is described at https://developers.google.com/google-apps/calendar/quickstart/python - rename the downloaded file to `ical_to_gcal_sync_client_secret.json` and place it in the same location as the script. 
-6. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 4 to access your calendars. If successful it should store the credentials in `ical_to_gcal_sync.json`.
-7. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
+2. Modify the value of `ICAL_FEEDS` to configure your calendars. It should contain a list with one or more entries where each entry is a dict with the following structure:
+```python
+ICAL_FEEDS = [
+    {
+        # source of calendar events. normally this is an iCal feed URL, but you can also use a local path
+        # containing .ics files as a data source instead (in that case set 'files' to True)
+        'source': '<ICAL URL OR DIRECTORY PATH>',
+        # the ID of the Google calendar to insert events into. this can be "primary" if you want to use the
+        # default main calendar, or a 'longID@group.calendar.google.com' string for secondary calendars. You
+        # can find the long calendar ID on its settings page.
+        'destination': '<GOOGLE CAL ID>',
+        # set to False if source is a URL, True if it's a local path
+        'files': False,
+    },
+]
+```
+3. If your iCal feed is password protected you should also set the variables `ICAL_FEED_USER` and `ICAL_FEED_PASS` appropriately. 
+4. Create and activate a virtualenv and then run `pip install -r requirements.txt`
+5. Go through the process of registering an app in the Google Calendar API dashboard in order to obtain an OAuth client ID. This process is described at https://developers.google.com/google-apps/calendar/quickstart/python. It's important to select "Desktop app" for the OAuth "Application Type" field. Once the credentials are created, download the JSON file, rename it to `ical_to_gcal_sync_client_secret.json` and  place it in the same location as the script. 
+6. Until recently you could leave your Google Cloud project in "testing" mode and the OAuth flow would work indefinitely. However as [described here](https://support.google.com/cloud/answer/10311615#publishing-status&zippy=%2Ctesting) any tokens for apps in this mode will now expire after 7 days, including refresh tokens. To avoid having to manually re-auth every time this happens, go to [your OAuth consent page configuration](https://console.cloud.google.com/apis/credentials/consent) and set the "Publishing status" to "Production". This will display a warning that you need to do a lot of verification steps, but things still seem to work if you ignore the warnings. 
+7. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 5 to access your calendars. If successful it should store the credentials in `ical_to_gcal_sync.json`.
+8. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
+
+## OAuth workarounds
+
+If you're running the script on a headless device you may have some issues with step 7 above. It normally attempts to auto-open a browser to allow you to authorise the request, and will print a URL to visit instead if it can't find a browser/display. You can visit this URL from another device, but the final step in the auth flow is an HTTP request sent back to the server started by `auth.py`. This will fail when you're using another device because the URL it redirects your browser to will be `http://localhost:port/...`. To workaround this there are a few options:
+ - clone the repo to another machine, run the auth flow there, and then copy the saved credentials file to the headless device
+ - copy the `http://localhost:port/...` URL and then in an SSH session on the headless device run `curl <URL>` 
+ - alternatively if your headless device has open ports, you can modify the `run_local_server()` line in auth.py to have the Google redirect point to a hostname other than `localhost`. See the `host` and `port` parameters in the [documentation](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.InstalledAppFlow.run_local_server) 
 
 ## Multiple Configurations / Alternate Config Location
 

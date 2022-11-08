@@ -39,8 +39,7 @@ def get_current_events_from_files(path):
     """Retrieves data from iCal files.  Assumes that the files are all
     *.ics files located in a single directory.
 
-    Returns the parsed Calendar object of None if no events are found.
-
+    Returns the parsed list of events or None if an error occurs.
     """
 
     from glob import glob
@@ -65,10 +64,10 @@ def get_current_events_from_files(path):
         return None
 
 def get_current_events(feed_url_or_path, files):
-    """Retrieves data from iCal iCal feed and returns an ics.Calendar object 
-    containing the parsed data.
+    """Retrieves data from an iCal feed and returns a list of icalevents
+    Event objects
 
-    Returns the parsed Calendar object or None if an error occurs.
+    Returns the parsed list of events or None if an error occurs.
     """
 
     events_end = datetime.now()
@@ -146,7 +145,7 @@ def get_gcal_datetime(py_datetime, gcal_timezone):
 def get_gcal_date(py_datetime):
     return {u'date': py_datetime.strftime('%Y-%m-%d')}
 
-def create_id(uid, begintime, endtime):
+def create_id(uid, begintime, endtime, prefix=''):
     """ Converts ical UUID, begin and endtime to a valid Gcal ID
 
     Characters allowed in the ID are those used in base32hex encoding, i.e. lowercase letters a-v and digits 0-9, see section 3.1.2 in RFC2938
@@ -157,7 +156,7 @@ def create_id(uid, begintime, endtime):
         ID
     """
     allowed_chars = string.ascii_lowercase[:22] + string.digits
-    return re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).timestamp) + str(arrow.get(endtime).timestamp)
+    return prefix + re.sub('[^{}]'.format(allowed_chars), '', uid.lower()) + str(arrow.get(begintime).int_timestamp) + str(arrow.get(endtime).int_timestamp)
 
 if __name__ == '__main__':
     mandatory_configs = ['CREDENTIAL_PATH', 'ICAL_FEEDS', 'APPLICATION_NAME']
@@ -210,9 +209,9 @@ if __name__ == '__main__':
                         continue
 
             except Exception as ex:
-                logger.error("Error processing entry (%s) - leaving as-is" % str(ev))
+                logger.error("Error processing entry (%s, %s) - leaving as-is" % (str(ev), str(ex)))
 
-            ical_events[create_id(ev.uid, ev.start, ev.end)] = ev
+            ical_events[create_id(ev.uid, ev.start, ev.end, config.get('EVENT_ID_PREFIX', ''))] = ev
 
         logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
 
@@ -320,7 +319,6 @@ if __name__ == '__main__':
                 gcal_event['source'] = {'title': 'Imported from ical_to_gcal_sync.py', 'url': url_feed}
                 gcal_event['location'] = ical_event.location
 
-
                 # check if no time specified in iCal, treat as all day event if so
                 delta = ical_event.end - ical_event.start
                 # TODO multi-day events?
@@ -340,11 +338,12 @@ if __name__ == '__main__':
                 try:
                     time.sleep(config['API_SLEEP_TIME'])
                     service.events().insert(calendarId=feed['destination'], body=gcal_event).execute()
-                except Exception:
+                except Exception as ei:
+                    logger.warning("Error inserting: %s (%s)" % (gcal_event['id'], str(ei)))
                     time.sleep(config['API_SLEEP_TIME'])
                     try:
                         service.events().update(calendarId=feed['destination'], eventId=gcal_event['id'], body=gcal_event).execute()
                     except Exception as ex:
-                        logger.error("Error updating: %s (%s)" % ( gcal_event['id'], ex ) )
+                        logger.error("Error updating: %s (%s)" % (gcal_event['id'], ex))
 
         logger.info('> Processing of source %s completed' % feed['source'])
