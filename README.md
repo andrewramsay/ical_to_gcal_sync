@@ -29,8 +29,8 @@ ICAL_FEEDS = [
 4. Create and activate a virtualenv and then run `pip install -r requirements.txt`
 5. Go through the process of registering an app in the Google Calendar API dashboard in order to obtain an OAuth client ID. This process is described at https://developers.google.com/google-apps/calendar/quickstart/python. It's important to select "Desktop app" for the OAuth "Application Type" field. Once the credentials are created, download the JSON file, rename it to `ical_to_gcal_sync_client_secret.json` and  place it in the same location as the script. 
 6. Until recently you could leave your Google Cloud project in "testing" mode and the OAuth flow would work indefinitely. However as [described here](https://support.google.com/cloud/answer/10311615#publishing-status&zippy=%2Ctesting) any tokens for apps in this mode will now expire after 7 days, including refresh tokens. To avoid having to manually re-auth every time this happens, go to [your OAuth consent page configuration](https://console.cloud.google.com/apis/credentials/consent) and set the "Publishing status" to "Production". This will display a warning that you need to do a lot of verification steps, but things still seem to work if you ignore the warnings. 
-7. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 5 to access your calendars. If successful it should store the credentials in `ical_to_gcal_sync.json`.
-8. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
+7. Run the script. This should trigger the OAuth2 authentication process and prompt you to allow the app you created in step 5 to access your calendars. If successful it should store the credentials in `ical_to_gcal_sync_credentials.json`.
+9. Subsequent runs of the script should not require any further interaction unless the credentials are invalidated/changed.
 
 ## OAuth workarounds
 
