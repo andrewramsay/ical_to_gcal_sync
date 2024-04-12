@@ -12,7 +12,7 @@ googleapis-common-protos==1.56.4
 httplib2==0.20.4
 icalendar==5.0.1
 icalevents==0.1.25
-idna==3.4
+idna==3.7
 oauthlib==3.2.2
 protobuf==4.21.8
 pyasn1==0.4.8
