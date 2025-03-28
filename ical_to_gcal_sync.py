@@ -17,7 +17,8 @@ from datetime import datetime, timezone, timedelta
 
 from auth import auth_with_calendar_api
 from pathlib import Path
-from httplib2 import Http
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
 
 config = {}
 config_path=os.environ.get('CONFIG_PATH', 'config.py')
@@ -82,14 +83,17 @@ def get_current_events(feed_url_or_path, files):
         if files:
             cal = events(file=feed_url_or_path, end=events_end)
         else:
-            # directly configure http connection object to set ssl and authentication parameters
-            http_conn = Http(disable_ssl_certificate_validation=not config.get('ICAL_FEED_VERIFY_SSL_CERT', True))
-
+            headers = {}
             if config.get('ICAL_FEED_USER') and config.get('ICAL_FEED_PASS'):
-                # credentials used for every connection
-                http_conn.add_credentials(name=config.get('ICAL_FEED_USER'), password=config.get('ICAL_FEED_PASS'))
+                headers = urllib3.make_headers(basic_auth='{}:{}'.format(config.get('ICAL_FEED_USER'), config.get('ICAL_FEED_PASS')))
 
-            cal = events(feed_url_or_path, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)), end=events_end, http=http_conn)
+            if not config.get('ICAL_FEED_VERIFY_SSL_CERT', True):
+                urllib3.disable_warnings(InsecureRequestWarning)
+                http = urllib3.PoolManager(cert_reqs='CERT_NONE', headers=headers)
+            else:
+                http = urllib3.PoolManager(headers=headers)
+
+            cal = events(feed_url_or_path, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)), end=events_end, http=http)
     except Exception as e:
         logger.error('> Error retrieving iCal data ({})'.format(e))
         return None
