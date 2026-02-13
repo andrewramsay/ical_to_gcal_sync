@@ -1,6 +1,9 @@
 
 # Sensitive files
 
+ical_to_gcal_sync_client_secret.json
+ical_to_gcal_sync_credentials.json
+
 /client_secret.json
 /credentials.pckl
 /config.py
@@ -88,9 +91,12 @@ celerybeat-schedule
 # virtualenv
 venv/
 ENV/
+.venv
 
 # Spyder project settings
 .spyderproject
 
 # Rope project settings
 .ropeproject
+
+.idea/

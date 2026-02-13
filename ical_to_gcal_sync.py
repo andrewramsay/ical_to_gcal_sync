@@ -71,6 +71,12 @@ def get_current_events(feed_url_or_path, files):
     Returns the parsed list of events or None if an error occurs.
     """
 
+    use_midnight = config.get('ICAL_SYNC_FROM_MIDNIGHT', False)  # Defaults to False to be backward compatible
+    if use_midnight:
+        events_start = today-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0))
+    else:
+        events_start = datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0))
+
     events_end = datetime.now()
     if config.get('ICAL_DAYS_TO_SYNC', 0) == 0:
         # default to 1 year ahead
@@ -93,9 +99,9 @@ def get_current_events(feed_url_or_path, files):
             else:
                 http = urllib3.PoolManager(headers=headers)
 
-            cal = events(feed_url_or_path, start=datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)), end=events_end, http=http)
+            cal = events(feed_url_or_path, start=events_start, end=events_end, http=http)
     except Exception as e:
-        logger.error('> Error retrieving iCal data ({})'.format(e))
+        logger.fatal('> Error retrieving iCal data ({})'.format(e))
         return None
 
     return cal
@@ -115,16 +121,12 @@ def get_gcal_events(calendar_id, service, from_time=None):
 
     # make an initial call, if this returns all events we don't need to do anything else,,,
     events_result = service.events().list(calendarId=calendar_id,
-                                         timeMin=from_time, 
-                                         singleEvents=True, 
-                                         orderBy='startTime', 
+                                         timeMin=from_time,
+                                         singleEvents=True,
+                                         orderBy='startTime',
                                          showDeleted=True).execute()
 
     events = events_result.get('items', [])
-    # if nextPageToken is NOT in the dict, this should be everything
-    if 'nextPageToken' not in events_result:
-        logger.info('> Found {:d} upcoming events in Google Calendar (single page)'.format(len(events)))
-        return events
 
     # otherwise keep calling the method, passing back the nextPageToken each time
     while 'nextPageToken' in events_result:
@@ -138,8 +140,12 @@ def get_gcal_events(calendar_id, service, from_time=None):
         newevents = events_result.get('items', [])
         events.extend(newevents)
         logger.debug('> Found {:d} events on new page, {:d} total'.format(len(newevents), len(events)))
-    
-    logger.info('> Found {:d} upcoming events in Google Calendar (multi page)'.format(len(events)))
+
+    logger.info('> Found {:d} upcoming events in Google Calendar'.format(len(events)))
+
+    for event in events:
+        logger.debug('{} {}'.format(event['start'], event['summary']))
+
     return events
 
 def get_gcal_datetime(py_datetime, gcal_timezone):
@@ -181,7 +187,9 @@ if __name__ == '__main__':
 
         # retrieve events from Google Calendar, starting from beginning of current day
         logger.info('> Retrieving events from Google Calendar')
-        gcal_events = get_gcal_events(calendar_id=feed['destination'], service=service, from_time=(today-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0))).isoformat())
+        start_date = (today-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)+1)).isoformat()
+        logger.debug('from time: {},  today: {}, PAST_DAYS_TO_SYNC: {}'.format(start_date, today, config.get('PAST_DAYS_TO_SYNC', 0)))
+        gcal_events = get_gcal_events(calendar_id=feed['destination'], service=service, from_time=start_date)
 
         # retrieve events from the iCal feed
         if feed['files']:
@@ -218,6 +226,8 @@ if __name__ == '__main__':
             ical_events[create_id(ev.uid, ev.start, ev.end, config.get('EVENT_ID_PREFIX', ''))] = ev
 
         logger.debug('> Collected {:d} iCal events'.format(len(ical_events)))
+        for event in ical_events.values():
+            logger.debug('{} {}'.format(event.start, event.summary))
 
         # retrieve the Google Calendar object itself
         gcal_cal = service.calendars().get(calendarId=feed['destination']).execute()
