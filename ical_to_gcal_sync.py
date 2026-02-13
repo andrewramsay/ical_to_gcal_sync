@@ -71,6 +71,12 @@ def get_current_events(feed_url_or_path, files):
     Returns the parsed list of events or None if an error occurs.
     """
 
+    use_midnight = config.get('ICAL_SYNC_FROM_MIDNIGHT', False)  # Defaults to False to be backward compatible
+    if use_midnight:
+        events_start = today-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0))
+    else:
+        events_start = datetime.now()-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0))
+
     events_end = datetime.now()
     if config.get('ICAL_DAYS_TO_SYNC', 0) == 0:
         # default to 1 year ahead
@@ -93,7 +99,7 @@ def get_current_events(feed_url_or_path, files):
             else:
                 http = urllib3.PoolManager(headers=headers)
 
-            cal = events(feed_url_or_path, start=today-timedelta(days=config.get('PAST_DAYS_TO_SYNC', 0)), end=events_end, http=http)
+            cal = events(feed_url_or_path, start=events_start, end=events_end, http=http)
     except Exception as e:
         logger.fatal('> Error retrieving iCal data ({})'.format(e))
         return None
