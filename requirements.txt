@@ -15,7 +15,7 @@ icalevents==0.2.1
 idna==3.7
 oauthlib==3.2.2
 protobuf==4.25.8
-pyasn1==0.4.8
+pyasn1==0.6.3
 pyasn1-modules==0.2.8
 pyparsing==2.4.7
 python-dateutil==2.9.0.post0
