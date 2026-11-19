@@ -46,6 +46,10 @@ LOGFILE = 'ical_to_gcal_sync.log'
 # Time to pause between successive API calls that may trigger rate-limiting protection
 API_SLEEP_TIME = 0.10
 
+# Set to True to sync iCal events starting from midnight of the current day.
+# Set to False to sync iCal events starting from the current time on the current day.
+ICAL_SYNC_FROM_MIDNIGHT = True
+
 # Integer value >= 0
 # Controls the timespan within which events from ICAL_FEED will be processed 
 # by the script. 
